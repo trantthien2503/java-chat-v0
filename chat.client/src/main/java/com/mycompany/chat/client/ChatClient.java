@@ -3,20 +3,11 @@
  */
 package com.mycompany.chat.client;
 
-import java.awt.BorderLayout;
+import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
 
 /**
  *
@@ -24,69 +15,88 @@ import javax.swing.JTextField;
  */
 public class ChatClient extends JFrame {
 
+    private JTextField messageField;
+    private JTextArea chatArea;
+    private JButton sendButton;
     private Socket socket;
     private BufferedReader reader;
     private PrintWriter writer;
-    private JTextArea chatTextArea;
-    private JTextField messageTextField;
-    private JButton sendButton;
 
     public ChatClient() {
-        initComponents();
-    }
-
-    private void initComponents() {
         setTitle("Chat Client");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(400, 300);
 
-        chatTextArea = new JTextArea();
-        chatTextArea.setEditable(false);
-        JScrollPane scrollPane = new JScrollPane(chatTextArea);
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
 
-        messageTextField = new JTextField();
+        chatArea = new JTextArea();
+        chatArea.setEditable(false);
+        JScrollPane chatScrollPane = new JScrollPane(chatArea);
+        mainPanel.add(chatScrollPane);
+
+        messageField = new JTextField();
         sendButton = new JButton("Send");
-
-        JPanel inputPanel = new JPanel(new BorderLayout());
-        inputPanel.add(messageTextField, BorderLayout.CENTER);
-        inputPanel.add(sendButton, BorderLayout.EAST);
-
-        add(scrollPane, BorderLayout.CENTER);
-        add(inputPanel, BorderLayout.SOUTH);
 
         sendButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String message = messageTextField.getText();
-                writer.println(message);
-                messageTextField.setText("");
+                sendMessage();
             }
         });
+
+        messageField.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                sendMessage();
+            }
+        });
+
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.X_AXIS));
+        inputPanel.add(messageField);
+        inputPanel.add(sendButton);
+        mainPanel.add(inputPanel);
+
+        add(mainPanel);
     }
 
-    public void start(String serverAddress, int serverPort) {
+    public void connectToServer(String serverAddress, int serverPort) {
         try {
             socket = new Socket(serverAddress, serverPort);
-            reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            writer = new PrintWriter(socket.getOutputStream(), true);
+            InputStream inputStream = socket.getInputStream();
+            OutputStream outputStream = socket.getOutputStream();
 
-            Thread inputThread = new Thread(this::handleServerMessages);
-            inputThread.start();
+            reader = new BufferedReader(new InputStreamReader(inputStream));
+            writer = new PrintWriter(outputStream, true);
 
-            setVisible(true);
-
+            // Start a separate thread to listen for messages from the server
+            Thread messageListener = new Thread(new MessageListener());
+            messageListener.start();
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
+        }
+    }
+
+    private void sendMessage() {
+        String message = messageField.getText();
+        writer.println(message);
+        appendMessage("Me: " + message);
+        messageField.setText("");
+    }
+
+    private void appendMessage(String message) {
+        chatArea.append(message + "\n");
+    }
+
+    private class MessageListener implements Runnable {
+
+        @Override
+        public void run() {
             try {
-                if (reader != null) {
-                    reader.close();
-                }
-                if (writer != null) {
-                    writer.close();
-                }
-                if (socket != null) {
-                    socket.close();
+                String message;
+                while ((message = reader.readLine()) != null) {
+                    appendMessage(message);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -94,19 +104,16 @@ public class ChatClient extends JFrame {
         }
     }
 
-    private void handleServerMessages() {
-        try {
-            String message;
-            while ((message = reader.readLine()) != null) {
-                chatTextArea.append(message + "\n");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     public static void main(String[] args) {
-        ChatClient client = new ChatClient();
-        client.start("localhost", 12345);
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                ChatClient chatClient = new ChatClient();
+                chatClient.setVisible(true);
+
+                // Connect to the server
+                chatClient.connectToServer("localhost", 12345);
+            }
+        });
     }
 }
