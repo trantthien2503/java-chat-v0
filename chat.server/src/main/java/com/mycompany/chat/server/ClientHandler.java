@@ -4,11 +4,9 @@
  */
 package com.mycompany.chat.server;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
+import java.io.*;
+import java.net.*;
+
 /**
  *
  * @author THIETKE
@@ -16,15 +14,19 @@ import java.net.Socket;
 class ClientHandler implements Runnable {
 
     private Socket clientSocket;
-    private ChatServer ChatServer;
+    private ChatServer chatServer;
     private BufferedReader inputReader;
     private PrintWriter outputWriter;
 
-    public ClientHandler(Socket clientSocket, ChatServer ChatServer) throws IOException {
+    public ClientHandler(Socket clientSocket, ChatServer chatServer) throws IOException {
         this.clientSocket = clientSocket;
-        this.ChatServer = ChatServer;
+        this.chatServer = chatServer;
         inputReader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         outputWriter = new PrintWriter(clientSocket.getOutputStream(), true);
+    }
+
+    public Socket getClientSocket() {
+        return clientSocket;
     }
 
     @Override
@@ -32,14 +34,14 @@ class ClientHandler implements Runnable {
         try {
             String inputLine;
             while ((inputLine = inputReader.readLine()) != null) {
-                ChatServer.broadcastMessage(inputLine);
+                chatServer.broadcastMessage(inputLine, this);
             }
         } catch (IOException e) {
             System.out.println("Error handling client: " + e.getMessage());
         } finally {
             try {
                 clientSocket.close();
-                ChatServer.removeClient(this);
+                chatServer.removeClient(this);
             } catch (IOException e) {
                 System.out.println("Error closing client socket: " + e.getMessage());
             }

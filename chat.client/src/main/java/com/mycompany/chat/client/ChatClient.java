@@ -3,9 +3,9 @@
  */
 package com.mycompany.chat.client;
 
+import java.awt.*;
+import java.awt.event.*;
 import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.Socket;
 
@@ -18,6 +18,7 @@ public class ChatClient extends JFrame {
     private JTextField messageField;
     private JTextArea chatArea;
     private JButton sendButton;
+    private JButton sendFileButton;
     private Socket socket;
     private BufferedReader reader;
     private PrintWriter writer;
@@ -27,16 +28,25 @@ public class ChatClient extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(400, 300);
 
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        JPanel mainPanel = new JPanel(new GridBagLayout());
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.fill = GridBagConstraints.BOTH;
+        constraints.weightx = 1.0;
+        constraints.weighty = 1.0;
 
         chatArea = new JTextArea();
         chatArea.setEditable(false);
+        chatArea.setFocusable(false); // Disabled chatArea
         JScrollPane chatScrollPane = new JScrollPane(chatArea);
-        mainPanel.add(chatScrollPane);
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        constraints.gridwidth = 3;
+        mainPanel.add(chatScrollPane, constraints);
 
         messageField = new JTextField();
         sendButton = new JButton("Send");
+        sendFileButton = new JButton("Send File");
 
         sendButton.addActionListener(new ActionListener() {
             @Override
@@ -45,20 +55,42 @@ public class ChatClient extends JFrame {
             }
         });
 
-        messageField.addActionListener(new ActionListener() {
+        sendFileButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                sendMessage();
+                sendFile();
             }
         });
 
-        JPanel inputPanel = new JPanel();
-        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.X_AXIS));
-        inputPanel.add(messageField);
-        inputPanel.add(sendButton);
-        mainPanel.add(inputPanel);
+        constraints.gridx = 0;
+        constraints.gridy = 1;
+        constraints.weighty = 0.0;
+        constraints.gridwidth = 1;
+        mainPanel.add(messageField, constraints);
+
+        constraints.gridx = 1;
+        constraints.gridy = 1;
+        constraints.weightx = 0.0;
+        mainPanel.add(sendButton, constraints);
+
+        constraints.gridx = 2;
+        constraints.gridy = 1;
+        mainPanel.add(sendFileButton, constraints);
 
         add(mainPanel);
+        setLocationRelativeTo(null); // Hiển thị cửa sổ ở giữa màn hình
+
+        messageField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    sendMessage();
+                    e.consume();
+                }
+            }
+        });
+
+        getRootPane().setDefaultButton(sendButton);
     }
 
     public void connectToServer(String serverAddress, int serverPort) {
@@ -89,6 +121,11 @@ public class ChatClient extends JFrame {
         chatArea.append(message + "\n");
     }
 
+    private void sendFile() {
+        // Logic để gửi file
+        JOptionPane.showMessageDialog(this, "File sent!");
+    }
+
     private class MessageListener implements Runnable {
 
         @Override
@@ -105,15 +142,12 @@ public class ChatClient extends JFrame {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                ChatClient chatClient = new ChatClient();
-                chatClient.setVisible(true);
+        SwingUtilities.invokeLater(() -> {
+            ChatClient chatClient = new ChatClient();
+            chatClient.setVisible(true);
 
-                // Connect to the server
-                chatClient.connectToServer("localhost", 12345);
-            }
+            // Connect to the server
+            chatClient.connectToServer("localhost", 12345);
         });
     }
 }

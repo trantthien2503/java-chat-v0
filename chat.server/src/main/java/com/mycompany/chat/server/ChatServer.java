@@ -3,11 +3,9 @@
  */
 package com.mycompany.chat.server;
 
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.*;
+import java.net.*;
+import java.util.*;
 
 /**
  *
@@ -15,19 +13,25 @@ import java.util.List;
  */
 public class ChatServer {
 
-    private ServerSocket serverSocket;
-    private List<ClientHandler> clients = new ArrayList<>();
+    private List<ClientHandler> clients;
+
+    public ChatServer() {
+        clients = new ArrayList<>();
+    }
 
     public void start(int port) {
         try {
-            serverSocket = new ServerSocket(port);
+            ServerSocket serverSocket = new ServerSocket(port);
             System.out.println("Server started on port " + port);
 
             while (true) {
+                System.out.println("Waiting for client connections...");
                 Socket clientSocket = serverSocket.accept();
+                System.out.println("Client connected: " + clientSocket);
 
                 ClientHandler clientHandler = new ClientHandler(clientSocket, this);
                 clients.add(clientHandler);
+
                 Thread clientThread = new Thread(clientHandler);
                 clientThread.start();
             }
@@ -36,18 +40,21 @@ public class ChatServer {
         }
     }
 
-    public synchronized void broadcastMessage(String message) {
+    public synchronized void broadcastMessage(String message, ClientHandler sender) {
         for (ClientHandler client : clients) {
-            client.sendMessage(message);
+            if (client != sender) {
+                client.sendMessage(message);
+            }
         }
     }
 
-    public synchronized void removeClient(ClientHandler client) {
-        clients.remove(client);
+    public synchronized void removeClient(ClientHandler clientHandler) {
+        clients.remove(clientHandler);
+        System.out.println("Client disconnected: " + clientHandler.getClientSocket());
     }
 
     public static void main(String[] args) {
-        ChatServer server = new ChatServer();
-        server.start(12345);
+        ChatServer chatServer = new ChatServer();
+        chatServer.start(12345);
     }
 }
