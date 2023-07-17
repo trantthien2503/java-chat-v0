@@ -23,7 +23,66 @@ public class ChatClient extends JFrame {
     private BufferedReader reader;
     private PrintWriter writer;
 
-    public ChatClient() {
+    private JTextField usernameField;
+    private JPasswordField passwordField;
+    private JButton loginButton;
+    private JButton registerButton;
+
+    public void loginRegisterGUI() {
+        setTitle("Login/Register");
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setPreferredSize(new Dimension(300, 200));
+
+        // Tạo panel chứa các thành phần giao diện
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridLayout(3, 2, 10, 10));
+
+        // Thêm các thành phần giao diện vào panel
+        JLabel usernameLabel = new JLabel("Username:");
+        panel.add(usernameLabel);
+
+        usernameField = new JTextField();
+        panel.add(usernameField);
+
+        JLabel passwordLabel = new JLabel("Password:");
+        panel.add(passwordLabel);
+
+        passwordField = new JPasswordField();
+        panel.add(passwordField);
+
+        loginButton = new JButton("Login");
+        panel.add(loginButton);
+
+        registerButton = new JButton("Register");
+        panel.add(registerButton);
+
+        // Đăng ký bộ xử lý sự kiện cho nút đăng nhập và nút đăng ký
+        loginButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String username = usernameField.getText();
+                char[] password = passwordField.getPassword();
+                // Xử lý đăng nhập ở đây
+            }
+        });
+
+        registerButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String username = usernameField.getText();
+                char[] password = passwordField.getPassword();
+                // Xử lý đăng ký ở đây
+            }
+        });
+
+        // Thêm panel vào JFrame
+        add(panel);
+
+        pack();
+        setLocationRelativeTo(null); // Đặt cửa sổ ở giữa màn hình
+    }
+
+    public void chatClient() {
         setTitle("Chat Client");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(400, 300);
@@ -127,7 +186,6 @@ public class ChatClient extends JFrame {
     }
 
     private class MessageListener implements Runnable {
-
         @Override
         public void run() {
             try {
@@ -144,10 +202,11 @@ public class ChatClient extends JFrame {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             ChatClient chatClient = new ChatClient();
-            chatClient.setVisible(true);
+            chatClient.loginRegisterGUI();
+//            chatClient.setVisible(true);
 
             // Connect to the server
-            chatClient.connectToServer("localhost", 12345);
+//            chatClient.connectToServer("localhost", 12345);
         });
     }
 }
